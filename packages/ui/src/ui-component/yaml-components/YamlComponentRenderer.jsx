@@ -2,8 +2,7 @@ import React from 'react'
 import { Form } from 'antd'
 import { componentMap } from './index'
 import PropTypes from 'prop-types'
-
-const types = [`QRadioButton`]
+import { isForwardRef } from '@/utils/isForwardRef'
 
 const YamlComponentRenderer = ({ config, data, onValueChange }) => {
     const renderComponent = (componentConfig, index, currentPath = '', childrenRefsInfo = {}) => {
@@ -66,7 +65,8 @@ const YamlComponentRenderer = ({ config, data, onValueChange }) => {
             currentPath: newPath,
             onChange: onValueChange,
             type,
-            isRadioButton
+            isRadioButton,
+            childrenRefsInfo
         }
 
         if (children && children.length > 0) {
@@ -112,8 +112,8 @@ const YamlComponentRenderer = ({ config, data, onValueChange }) => {
             }
         }
 
-        // 用于传递给子组件的ref
-        if (types.includes(type)) {
+        // 检查组件是否使用了 forwardRef
+        if (isForwardRef(Component)) {
             const { childrenRefs, index } = childrenRefsInfo
             return (
                 <Component
@@ -126,6 +126,7 @@ const YamlComponentRenderer = ({ config, data, onValueChange }) => {
                 />
             )
         }
+
         return <Component {...componentProps} />
     }
 

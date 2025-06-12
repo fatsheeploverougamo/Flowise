@@ -93,7 +93,7 @@ const YamlNodeRenderer = ({ props }) => {
             }
             return item
         })
-        // console.log('newTotalData', newTotalData)
+        console.log('newTotalData', newTotalData)
         reactFlowInstance.setNodes(newTotalData)
     }, [data])
 
