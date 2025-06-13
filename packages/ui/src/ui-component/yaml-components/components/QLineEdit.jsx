@@ -52,7 +52,6 @@ const QLineEdit = forwardRef((props, ref) => {
     }
 
     const handleFileChange = (event) => {
-        console.log('event', event)
         const file = event.target.files[0]
         if (file) {
             setControlledValue(file.path || file.name) // 使用文件路径或文件名

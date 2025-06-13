@@ -163,6 +163,7 @@ export interface INodeData extends INodeProperties {
     innerNodes?: INode[]
     innerEdges?: INode[]
     options?: any
+    inputParams?: INodeParams[] | { [key: string]: any }
 }
 
 export interface INodeCredential {

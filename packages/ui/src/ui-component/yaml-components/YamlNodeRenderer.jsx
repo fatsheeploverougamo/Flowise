@@ -1,6 +1,6 @@
-import { useState, useEffect, useContext } from 'react'
+import { useState, useEffect, useContext, useRef } from 'react'
 import PropTypes from 'prop-types'
-import { Box, Typography } from '@mui/material'
+import { Box, Typography, Button, TextField } from '@mui/material'
 import YamlComponentRenderer from './YamlComponentRenderer'
 import { deepClone } from '../../utils/deepClone'
 import { flowContext } from '@/store/context/ReactFlowContext'
@@ -70,6 +70,8 @@ const YamlNodeRenderer = ({ props }) => {
 
     // 使用扁平化的数据结构
     const [data, setData] = useState({})
+    const [filePath, setFilePath] = useState('')
+    const fileInputRef = useRef(null)
 
     const handleValueChange = (path, value) => {
         setData((prevData) => {
@@ -90,12 +92,20 @@ const YamlNodeRenderer = ({ props }) => {
         const newTotalData = totalData.map((item) => {
             if (item.id === id && item.data.inputParams && item.data.inputParams.widget) {
                 item.data.inputParams.widget = nestedData
+                item.data.inputParams.filePath = filePath
             }
             return item
         })
         console.log('newTotalData', newTotalData)
         reactFlowInstance.setNodes(newTotalData)
-    }, [data])
+    }, [data, filePath])
+
+    const handlePathSave = () => {
+        if (!fileInputRef.current || !fileInputRef.current.querySelector('input')) return
+        const path = fileInputRef.current.querySelector('input').value
+
+        setFilePath(path)
+    }
 
     return (
         <>
@@ -121,6 +131,25 @@ const YamlNodeRenderer = ({ props }) => {
                 {widget && (
                     <YamlComponentRenderer config={widget} data={data} onValueChange={handleValueChange} parentTitles={[config.title]} />
                 )}
+                <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 2 }}>
+                    <>
+                        <TextField
+                            type='text'
+                            size='small'
+                            ref={fileInputRef}
+                            className='nodrag'
+                            sx={{
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: '4px'
+                                },
+                                marginRight: '10px'
+                            }}
+                        />
+                    </>
+                    <Button variant='contained' onClick={handlePathSave}>
+                        保存
+                    </Button>
+                </Box>
             </Box>
         </>
     )

@@ -663,7 +663,7 @@ const CanvasHeader = ({ chatflow, isAgentCanvas, isAgentflowV2, handleSaveFlow, 
                     <Typography variant='h3'>Test Run#7</Typography>
                     <IconX style={{ cursor: 'pointer' }} onClick={() => setRunDialogOpen(false)} />
                 </Box>
-                <DialogContent>
+                <DialogContent sx={{ display: 'flex', flexDirection: 'column' }}>
                     <Tabs
                         value={activeTab}
                         onChange={(e, newValue) => setActiveTab(newValue)}
@@ -675,7 +675,7 @@ const CanvasHeader = ({ chatflow, isAgentCanvas, isAgentflowV2, handleSaveFlow, 
                     </Tabs>
 
                     {activeTab === 0 && (
-                        <Box>
+                        <Box sx={{ overflowY: 'auto', flexGrow: 1 }}>
                             <pre style={{ whiteSpace: 'pre-wrap' }}>
                                 {runResult.output &&
                                     typeof runResult.output === 'object' &&

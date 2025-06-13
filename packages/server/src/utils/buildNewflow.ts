@@ -50,6 +50,7 @@ interface IFlowNode extends INode {
         innerEdges?: IFlowEdge[]
     }
     options?: any
+    inputParams?: INodeParams[] | { [key: string]: any }
 }
 
 interface IFlowEdge {
@@ -191,6 +192,9 @@ class FlowManager {
             if (node.options) {
                 nodeData.options = node.options
             }
+            if (node.inputParams) {
+                nodeData.inputParams = node.inputParams
+            }
             // 执行节点初始化
             const result = await node.init(nodeData, nodeData.inputs)
             node.previousResult = result
@@ -316,7 +320,6 @@ class FlowManager {
             while (nodeQueue.length > 0) {
                 const currentNode = nodeQueue.shift()!
                 const nodeId = currentNode.id
-
                 // 检查节点是否可以执行
                 // 1. 如果节点在循环中，允许多次执行
                 // 2. 如果是 LoopInput 节点，允许多次执行
