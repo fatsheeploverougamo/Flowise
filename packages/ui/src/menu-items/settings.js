@@ -93,6 +93,13 @@ const settings = {
             type: 'item',
             url: '',
             icon: icons.IconTrash
+        },
+        {
+            id: 'loadYaml',
+            title: 'Load Yaml',
+            type: 'item',
+            url: '',
+            icon: icons.IconFileUpload
         }
     ]
 }

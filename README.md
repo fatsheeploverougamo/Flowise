@@ -17,6 +17,15 @@ English | [繁體中文](./i18n/README-TW.md) | [简体中文](./i18n/README-ZH.
 <a href="https://github.com/FlowiseAI/Flowise">
 <img width="100%" src="https://github.com/FlowiseAI/Flowise/blob/main/images/flowise_agentflow.gif?raw=true"></a>
 
+## 项目启动
+
+node 18.18.0 版本
+pnpm install
+pnpm build
+启动前到 packages/servers 目录下复制.env.example 修改名称为 .env，修改文件接口为 3100,可通过修改 ui 文件自定义接口
+./dev.bat 启动开发者模式项目
+打开 http://localhost:3000](http://localhost:3000)
+
 ## ⚡Quick Start
 
 Download and Install [NodeJS](https://nodejs.org/en/download) >= 18.15.0

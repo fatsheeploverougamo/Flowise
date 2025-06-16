@@ -412,19 +412,29 @@ const Canvas = () => {
             }
 
             nodeData = JSON.parse(nodeData)
-
+            const { inputParams } = nodeData
             const position = reactFlowInstance.screenToFlowPosition({
                 x: event.clientX - reactFlowBounds.left - 100,
                 y: event.clientY - reactFlowBounds.top - 50
             })
-
             const newNodeId = getUniqueNodeId(nodeData, reactFlowInstance.getNodes())
-
             const newNode = {
                 id: newNodeId,
                 position,
-                type: nodeData.type === 'StickyNote' ? 'stickyNote' : nodeData.type === 'group' ? 'group' : 'customNode',
-                data: initNode(nodeData, newNodeId)
+                type:
+                    nodeData.type === 'StickyNote'
+                        ? 'stickyNote'
+                        : nodeData.type === 'group'
+                        ? 'group'
+                        : nodeData.type === 'YamlNode'
+                        ? 'yamlNode'
+                        : 'customNode',
+                data: inputParams
+                    ? {
+                          ...initNode(nodeData, newNodeId),
+                          inputParams: inputParams
+                      }
+                    : initNode(nodeData, newNodeId)
             }
 
             setSelectedNode(newNode)

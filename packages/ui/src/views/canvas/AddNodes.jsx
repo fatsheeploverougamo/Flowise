@@ -233,7 +233,6 @@ const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerat
                 }
                 filteredResult[category] = result[category]
             }
-
             setNodes(filteredResult)
             setCategoryExpanded(accordianCategories)
         }
@@ -546,7 +545,7 @@ const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerat
                                                             <AccordionDetails>
                                                                 {nodes[category].map((node, index) => (
                                                                     <div
-                                                                        key={node.name}
+                                                                        key={`${node.name}-${index}`}
                                                                         onDragStart={(event) => onDragStart(event, node)}
                                                                         draggable
                                                                     >

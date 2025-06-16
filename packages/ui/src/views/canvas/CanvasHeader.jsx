@@ -182,7 +182,13 @@ const CanvasHeader = ({ chatflow, isAgentCanvas, isAgentflowV2, handleSaveFlow, 
             } catch (e) {
                 console.error(e)
             }
+        } else if (setting === 'loadYaml') {
+            onLoadYamlClick()
         }
+    }
+
+    const onLoadYamlClick = () => {
+        console.log(`onLoadYamlClick`)
     }
 
     const onUploadFile = (file) => {

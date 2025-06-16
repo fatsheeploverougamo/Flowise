@@ -27,6 +27,7 @@ const NodeOutputHandler = ({ outputAnchor, data, disabled = false }) => {
     const [offsetTop, setOffsetTop] = useState(0)
     const [dropdownValue, setDropdownValue] = useState(null)
     const { reactFlowInstance } = useContext(flowContext)
+    const { outputsHidden = false } = outputAnchor
 
     const getAvailableOptions = (options = []) => {
         return options.filter((option) => !option.hidden && !option.isAnchor)
@@ -65,7 +66,7 @@ const NodeOutputHandler = ({ outputAnchor, data, disabled = false }) => {
             }, 0)
         }
     }, [data.id, dropdownValue, updateNodeInternals])
-    // console.log('NodeOutputHandler', outputAnchor, Position, position);
+
     return (
         <div ref={ref}>
             {outputAnchor.type !== 'options' && !outputAnchor.options && (
@@ -85,7 +86,7 @@ const NodeOutputHandler = ({ outputAnchor, data, disabled = false }) => {
                             }}
                         />
                     </CustomWidthTooltip>
-                    <Box sx={{ p: 2, textAlign: 'end' }}>
+                    <Box sx={{ p: 2, textAlign: 'end', display: outputsHidden ? 'none' : 'block' }}>
                         <Typography>{outputAnchor.label}</Typography>
                     </Box>
                 </>
@@ -205,7 +206,7 @@ const NodeOutputHandler = ({ outputAnchor, data, disabled = false }) => {
                                 }}
                             />
                         </CustomWidthTooltip>
-                        <Box sx={{ p: 2, textAlign: 'end' }}>
+                        <Box sx={{ p: 2, textAlign: 'end', display: outputAnchor.outputsHidden ? 'none' : 'block' }}>
                             <Dropdown
                                 disabled={disabled}
                                 disableClearable={true}

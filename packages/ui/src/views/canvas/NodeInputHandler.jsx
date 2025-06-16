@@ -771,6 +771,7 @@ const NodeInputHandler = ({
 
         // 处理 inputAnchor 的渲染
         if (inputAnchor) {
+            const { inputsHidden = false } = inputAnchor
             return (
                 <>
                     <CustomWidthTooltip placement='left' title={inputAnchor.type}>
@@ -788,7 +789,7 @@ const NodeInputHandler = ({
                             }}
                         />
                     </CustomWidthTooltip>
-                    <Box sx={{ p: 2 }}>
+                    <Box sx={{ p: 2, display: inputsHidden ? 'none' : 'block' }}>
                         <Typography>
                             {inputAnchor.label}
                             {!inputAnchor.optional && <span style={{ color: 'red' }}>&nbsp;*</span>}

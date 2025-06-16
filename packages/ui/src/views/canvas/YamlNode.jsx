@@ -23,7 +23,7 @@ import { flowContext } from '@/store/context/ReactFlowContext'
 
 const YamlNode = (props) => {
     const data = props.data
-    const { inputParams } = data || {}
+    let { inputParams } = data || {}
     const { dialog, widget } = inputParams || {}
     const { width } = dialog || {}
 
@@ -74,6 +74,10 @@ const YamlNode = (props) => {
             updateNodeInternals(data.id)
         }
     }, [ref])
+
+    if (Array.isArray(inputParams) || !widget) {
+        return null
+    }
 
     return (
         <div ref={ref}>

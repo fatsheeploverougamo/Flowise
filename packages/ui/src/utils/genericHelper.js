@@ -67,7 +67,8 @@ const createOutputOption = (output, newNodeId) => {
         description: output.description ?? '',
         type,
         isAnchor: output?.isAnchor,
-        hidden: output?.hidden
+        hidden: output?.hidden,
+        outputsHidden: output?.outputsHidden || false
     }
 }
 
@@ -84,7 +85,8 @@ const createStandardOutputs = (nodeData, newNodeId) => {
                 type: 'options',
                 description: nodeData.outputs[0].description ?? '',
                 options: outputOptions,
-                default: nodeData.outputs[0].name
+                default: nodeData.outputs[0].name,
+                outputsHidden: nodeData.outputsHidden || false
             }
         ]
     }
@@ -139,12 +141,12 @@ export const initNode = (nodeData, newNodeId, isAgentflow) => {
         'tabs',
         'conditionFunction' // This is a special type for condition functions
     ]
-
     // Inputs
     for (let i = 0; i < incoming; i += 1) {
         const newInput = {
             ...nodeData.inputs[i],
-            id: `${newNodeId}-input-${nodeData.inputs[i].name}-${nodeData.inputs[i].type}`
+            id: `${newNodeId}-input-${nodeData.inputs[i].name}-${nodeData.inputs[i].type}`,
+            inputsHidden: nodeData.inputs[i].inputsHidden || false
         }
         if (whitelistTypes.includes(nodeData.inputs[i].type)) {
             inputParams.push(newInput)

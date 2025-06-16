@@ -941,7 +941,9 @@ export const LoopNode: React.FC<NodeProps<LoopNodeData>> = ({ data, id }) => {
                 )
             }}
             onKeyDown={(e) => {
-                e.stopPropagation()
+                if (e.key !== 'Delete' && e.key !== 'Backspace') {
+                    e.stopPropagation()
+                }
             }}
             onMouseDown={(e) => {
                 // 阻止鼠标按下事件，防止节点被选中
