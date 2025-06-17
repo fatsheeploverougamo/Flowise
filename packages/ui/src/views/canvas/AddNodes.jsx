@@ -78,7 +78,16 @@ const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerat
     const [searchValue, setSearchValue] = useState('')
     const [nodes, setNodes] = useState({})
     const [open, setOpen] = useState(false)
-    const [categoryExpanded, setCategoryExpanded] = useState({})
+    const [categoryExpanded, setCategoryExpanded] = useState(() => {
+        const initialState = {}
+        if (isAgentCanvas) {
+            initialState['Multi Agents'] = true
+            initialState['Sequential Agents'] = true
+            initialState['Memory'] = true
+            initialState['Agent Flows'] = true
+        }
+        return initialState
+    })
     const [tabValue, setTabValue] = useState(0)
 
     const [openDialog, setOpenDialog] = useState(false)
@@ -90,12 +99,18 @@ const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerat
     const prevOpen = useRef(open)
     const ps = useRef()
 
-    const scrollTop = () => {
-        const curr = ps.current
-        if (curr) {
-            curr.scrollTop = 0
+    // 保存当前的 tab 值
+    const currentTabRef = useRef(tabValue)
+
+    useEffect(() => {
+        currentTabRef.current = tabValue
+    }, [tabValue])
+
+    useEffect(() => {
+        if (nodesData) {
+            groupByCategory(nodesData, currentTabRef.current, false)
         }
-    }
+    }, [nodesData])
 
     const handleTabChange = (event, newValue) => {
         setTabValue(newValue)
@@ -173,11 +188,11 @@ const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerat
 
     const groupByCategory = (nodes, newTabValue, isFilter) => {
         if (isAgentCanvas) {
-            const accordianCategories = {}
+            const accordianCategories = { ...categoryExpanded }
             const result = nodes.reduce(function (r, a) {
                 r[a.category] = r[a.category] || []
                 r[a.category].push(a)
-                accordianCategories[a.category] = isFilter ? true : false
+                if (isFilter) accordianCategories[a.category] = true
                 return r
             }, Object.create(null))
 
@@ -207,18 +222,16 @@ const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerat
                 }
             }
             setNodes(filteredResult)
-            accordianCategories['Multi Agents'] = true
-            accordianCategories['Sequential Agents'] = true
-            accordianCategories['Memory'] = true
-            accordianCategories['Agent Flows'] = true
-            setCategoryExpanded(accordianCategories)
+            if (isFilter) {
+                setCategoryExpanded(accordianCategories)
+            }
         } else {
             const taggedNodes = groupByTags(nodes, newTabValue)
-            const accordianCategories = {}
+            const accordianCategories = { ...categoryExpanded }
             const result = taggedNodes.reduce(function (r, a) {
                 r[a.category] = r[a.category] || []
                 r[a.category].push(a)
-                accordianCategories[a.category] = isFilter ? true : false
+                if (isFilter) accordianCategories[a.category] = true
                 return r
             }, Object.create(null))
 
@@ -234,7 +247,9 @@ const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerat
                 filteredResult[category] = result[category]
             }
             setNodes(filteredResult)
-            setCategoryExpanded(accordianCategories)
+            if (isFilter) {
+                setCategoryExpanded(accordianCategories)
+            }
         }
     }
 
@@ -291,7 +306,7 @@ const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerat
 
     useEffect(() => {
         if (nodesData) {
-            groupByCategory(nodesData)
+            groupByCategory(nodesData, currentTabRef.current, false)
             dispatch({ type: SET_COMPONENT_NODES, componentNodes: nodesData })
         }
 

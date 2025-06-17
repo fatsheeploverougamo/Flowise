@@ -96,7 +96,7 @@ const settings = {
         },
         {
             id: 'loadYaml',
-            title: 'Load Yaml',
+            title: '编辑 YAML 节点',
             type: 'item',
             url: '',
             icon: icons.IconFileUpload

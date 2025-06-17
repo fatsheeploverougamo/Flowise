@@ -2,6 +2,7 @@ import PropTypes from 'prop-types'
 import { useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { useEffect, useRef, useState } from 'react'
+import nodesApi from '@/api/nodes'
 
 // material-ui
 import { useTheme } from '@mui/material/styles'
@@ -42,6 +43,7 @@ import UpsertHistoryDialog from '@/views/vectorstore/UpsertHistoryDialog'
 import ViewLeadsDialog from '@/ui-component/dialog/ViewLeadsDialog'
 import ExportAsTemplateDialog from '@/ui-component/dialog/ExportAsTemplateDialog'
 import { StyledButton } from '@/ui-component/button/StyledButton'
+import YamlNodesDialog from '@/ui-component/dialog/YamlNodesDialog'
 
 // API
 import chatflowsApi from '@/api/chatflows'
@@ -57,7 +59,7 @@ import { closeSnackbar as closeSnackbarAction, enqueueSnackbar as enqueueSnackba
 
 // ==============================|| CANVAS HEADER ||============================== //
 
-const CanvasHeader = ({ chatflow, isAgentCanvas, isAgentflowV2, handleSaveFlow, handleDeleteFlow, handleLoadFlow }) => {
+const CanvasHeader = ({ chatflow, isAgentCanvas, isAgentflowV2, handleSaveFlow, handleDeleteFlow, handleLoadFlow, getNodesApi }) => {
     const theme = useTheme()
     const dispatch = useDispatch()
     const navigate = useNavigate()
@@ -97,6 +99,22 @@ const CanvasHeader = ({ chatflow, isAgentCanvas, isAgentflowV2, handleSaveFlow, 
         details: {},
         trace: []
     })
+
+    const [yamlDialogOpen, setYamlDialogOpen] = useState(false)
+    const [yamlNodes, setYamlNodes] = useState([])
+
+    // 获取 YAML 节点列表
+    const updateYamlNodes = () => {
+        if (getNodesApi.data) {
+            const nodes = getNodesApi.data.filter((n) => n.yamlType)
+            setYamlNodes(nodes)
+        }
+    }
+
+    // 监听数据变化
+    useEffect(() => {
+        updateYamlNodes()
+    }, [getNodesApi.data])
 
     const onSettingsItemClick = (setting) => {
         setSettingsOpen(false)
@@ -169,7 +187,6 @@ const CanvasHeader = ({ chatflow, isAgentCanvas, isAgentflowV2, handleSaveFlow, 
             try {
                 const flowData = JSON.parse(chatflow.flowData)
                 let dataStr = JSON.stringify(generateExportFlowData(flowData), null, 2)
-                //let dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr)
                 const blob = new Blob([dataStr], { type: 'application/json' })
                 const dataUri = URL.createObjectURL(blob)
 
@@ -183,12 +200,86 @@ const CanvasHeader = ({ chatflow, isAgentCanvas, isAgentflowV2, handleSaveFlow, 
                 console.error(e)
             }
         } else if (setting === 'loadYaml') {
-            onLoadYamlClick()
+            setYamlDialogOpen(true)
         }
     }
 
-    const onLoadYamlClick = () => {
-        console.log(`onLoadYamlClick`)
+    // 处理 YAML 文件上传
+    const handleYamlUpload = async (file) => {
+        if (!file) return
+
+        const formData = new FormData()
+        formData.append('file', file)
+        try {
+            const uploadRes = await nodesApi.uploadYaml(formData)
+            if (uploadRes.data.status !== 200) {
+                enqueueSnackbar({
+                    message: uploadRes?.response?.data?.message || '上传失败',
+                    options: {
+                        key: new Date().getTime() + Math.random(),
+                        variant: 'error'
+                    }
+                })
+                return
+            }
+            // 上传成功，刷新nodes数据
+            getNodesApi.request()
+            enqueueSnackbar({
+                message: uploadRes.data.message,
+                options: {
+                    key: new Date().getTime() + Math.random(),
+                    variant: 'success'
+                }
+            })
+        } catch (err) {
+            const errorMessage = err?.response?.data?.message || '上传失败'
+            enqueueSnackbar({
+                message: `上传失败: ${errorMessage}`,
+                options: {
+                    key: new Date().getTime() + Math.random(),
+                    variant: 'error'
+                }
+            })
+        }
+    }
+
+    // 处理 YAML 文件删除
+    const handleYamlDelete = async (nodeNames, fn) => {
+        if (!nodeNames || nodeNames.length === 0) return
+
+        try {
+            const deleteRes = await nodesApi.deleteYaml(nodeNames)
+            if (deleteRes.data.status !== 200 && deleteRes.data.status !== 207) {
+                enqueueSnackbar({
+                    message: deleteRes?.response?.data?.message || '删除失败',
+                    options: {
+                        key: new Date().getTime() + Math.random(),
+                        variant: 'error'
+                    }
+                })
+                return
+            }
+            // 删除成功，刷新nodes数据
+            getNodesApi.request()
+            enqueueSnackbar({
+                message: deleteRes.data.message,
+                options: {
+                    key: new Date().getTime() + Math.random(),
+                    variant: deleteRes.data.status === 200 ? 'success' : 'warning'
+                }
+            })
+
+            fn && fn()
+        } catch (err) {
+            const errorMessage = err?.response?.data?.message || '删除失败'
+            enqueueSnackbar({
+                message: `删除失败: ${errorMessage}`,
+                options: {
+                    key: new Date().getTime() + Math.random(),
+                    variant: 'error'
+                }
+            })
+        }
     }
 
     const onUploadFile = (file) => {
@@ -656,6 +747,13 @@ const CanvasHeader = ({ chatflow, isAgentCanvas, isAgentflowV2, handleSaveFlow, 
                 onCancel={() => setChatflowConfigurationDialogOpen(false)}
                 isAgentCanvas={isAgentCanvas}
             />
+            <YamlNodesDialog
+                show={yamlDialogOpen}
+                onCancel={() => setYamlDialogOpen(false)}
+                onUpload={handleYamlUpload}
+                onDelete={handleYamlDelete}
+                yamlNodes={yamlNodes}
+            />
 
             <Dialog
                 open={runDialogOpen}
@@ -819,7 +917,14 @@ CanvasHeader.propTypes = {
     handleDeleteFlow: PropTypes.func,
     handleLoadFlow: PropTypes.func,
     isAgentCanvas: PropTypes.bool,
-    isAgentflowV2: PropTypes.bool
+    isAgentflowV2: PropTypes.bool,
+    getNodesApi: PropTypes.object,
+    yamlNodes: PropTypes.array,
+    yamlDialogOpen: PropTypes.bool,
+    setYamlDialogOpen: PropTypes.func,
+    handleYamlUpload: PropTypes.func,
+    handleYamlDelete: PropTypes.func,
+    runDialogOpen: PropTypes.bool
 }
 
 export default CanvasHeader

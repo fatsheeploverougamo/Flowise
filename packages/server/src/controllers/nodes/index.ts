@@ -6,6 +6,7 @@ import * as yaml from 'js-yaml'
 import nodesService from '../../services/nodes'
 import { InternalFlowiseError } from '../../errors/internalFlowiseError'
 import { StatusCodes } from 'http-status-codes'
+import { getUserHome } from '../../utils'
 
 const getAllNodes = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -103,10 +104,13 @@ const executeCustomFunction = async (req: Request, res: Response, next: NextFunc
 
 const getNodeByYaml = async (next: NextFunction) => {
     try {
-        const yamlDir = path.join(__dirname, '../../../../../yaml')
+        // 使用配置或环境变量来定义 yaml 存储路径
+        const yamlDir = process.env.YAML_DIR || path.join(process.env.DATA_DIR || getUserHome(), '.flowise', 'yaml')
+
         const nodes = []
         // 检查yaml文件夹是否存在
         if (!fs.existsSync(yamlDir)) {
+            fs.mkdirSync(yamlDir, { recursive: true })
             return []
         }
 
@@ -114,7 +118,7 @@ const getNodeByYaml = async (next: NextFunction) => {
         const files = fs.readdirSync(yamlDir)
 
         for (const file of files) {
-            const filePath = path.join(yamlDir, file)
+            const filePath = path.normalize(path.join(yamlDir, file))
             const stats = fs.statSync(filePath)
 
             // 只处理文件，不处理文件夹
@@ -139,10 +143,12 @@ const getNodeByYaml = async (next: NextFunction) => {
                 const nodeConfig = {
                     label: label,
                     name: 'yamlNode',
-                    // "name": fileName,
                     version: 1,
                     type: 'YamlNode',
-                    icon: 'D:/workfiles/Flowise/packages/server/node_modules/flowise-components/dist/nodes/yamlNodes/yaml.svg',
+                    yamlType: true,
+                    icon: path.normalize(
+                        'D:/workfiles/Flowise/packages/server/node_modules/flowise-components/dist/nodes/yamlNodes/yaml.svg'
+                    ),
                     category: 'Utilities',
                     description: `yaml node for ${fileName}`,
                     baseClasses: ['YamlNode', 'Utilities'],
@@ -166,8 +172,9 @@ const getNodeByYaml = async (next: NextFunction) => {
                     ],
                     outputsHidden: true,
                     inputParams: jsonData,
-                    filePath:
+                    filePath: path.normalize(
                         'D:\\workfiles\\Flowise\\packages\\server\\node_modules\\flowise-components\\dist\\nodes\\utilities\\YamlNode\\YamlNode.js'
+                    )
                 }
 
                 nodes.push(nodeConfig)
@@ -183,11 +190,130 @@ const getNodeByYaml = async (next: NextFunction) => {
     }
 }
 
+// 上传yaml文件接口
+const uploadYaml = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: '未选择文件' })
+        }
+        const file = req.file
+        const ext = file.originalname.split('.').pop()?.toLowerCase()
+        if (ext !== 'yaml' && ext !== 'yml') {
+            return res.status(400).json({ message: '请上传yaml格式文件' })
+        }
+        // 使用配置或环境变量来定义 yaml 存储路径
+        const yamlDir = process.env.YAML_DIR || path.join(process.env.DATA_DIR || getUserHome(), '.flowise', 'yaml')
+
+        // 确保目录存在
+        if (!fs.existsSync(yamlDir)) {
+            fs.mkdirSync(yamlDir, { recursive: true })
+        }
+
+        // 检查重名
+        const filePath = path.normalize(path.join(yamlDir, file.originalname))
+        if (fs.existsSync(filePath)) {
+            return res.status(400).json({ message: 'yaml文件夹内已存在同名文件' })
+        }
+        // 写入文件
+        fs.writeFileSync(filePath, file.buffer)
+        return res.json({ message: '上传成功', status: 200, data: { filePath } })
+    } catch (error) {
+        next(error)
+    }
+}
+
+// 删除yaml文件接口
+const deleteYaml = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { nodeNames } = req.body
+        if (!nodeNames || !Array.isArray(nodeNames) || nodeNames.length === 0) {
+            return res.status(400).json({ message: '节点名称不能为空' })
+        }
+
+        // 使用配置或环境变量来定义 yaml 存储路径
+        const yamlDir = process.env.YAML_DIR || path.join(process.env.DATA_DIR || getUserHome(), '.flowise', 'yaml')
+
+        // 确保目录存在
+        if (!fs.existsSync(yamlDir)) {
+            fs.mkdirSync(yamlDir, { recursive: true })
+        }
+
+        // 获取目录中的所有文件
+        const existingFiles = fs.readdirSync(yamlDir)
+
+        interface DeleteResult {
+            success: string[]
+            failed: Array<{ name: string; reason: string }>
+        }
+
+        const results: DeleteResult = {
+            success: [],
+            failed: []
+        }
+
+        // 删除每个文件
+        for (const nodeName of nodeNames) {
+            // 将驼峰命名转换为下划线命名
+            const snakeCase = nodeName.replace(/[A-Z]/g, (letter: string) => `_${letter.toLowerCase()}`).replace(/^_/, '')
+            const fileName = snakeCase + '.yaml'
+            const filePath = path.normalize(path.join(yamlDir, fileName))
+
+            try {
+                // 检查文件是否存在
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath)
+                    results.success.push(nodeName)
+                } else {
+                    // 检查是否存在其他大小写版本的文件
+                    const matchingFile = existingFiles.find(
+                        (file) =>
+                            file.toLowerCase() === fileName.toLowerCase() ||
+                            file.toLowerCase() === nodeName.toLowerCase() + '.yaml' ||
+                            file.toLowerCase() === nodeName.toLowerCase() + '.yml'
+                    )
+
+                    if (matchingFile) {
+                        const actualPath = path.normalize(path.join(yamlDir, matchingFile))
+                        fs.unlinkSync(actualPath)
+                        results.success.push(nodeName)
+                    } else {
+                        results.failed.push({
+                            name: nodeName,
+                            reason: `文件不存在 (尝试路径: ${filePath}, 已检查: ${existingFiles.join(', ')})`
+                        })
+                    }
+                }
+            } catch (error: any) {
+                results.failed.push({ name: nodeName, reason: `删除失败: ${error.message || '未知错误'}` })
+            }
+        }
+
+        // 返回删除结果
+        if (results.failed.length === 0) {
+            return res.json({
+                message: `成功删除 ${results.success.length} 个文件`,
+                status: 200,
+                data: results
+            })
+        } else {
+            return res.json({
+                message: `成功删除 ${results.success.length} 个文件，${results.failed.length} 个文件删除失败`,
+                status: 207,
+                data: results
+            })
+        }
+    } catch (error: any) {
+        next(error)
+    }
+}
+
 export default {
     getAllNodes,
     getNodeByName,
     getSingleNodeIcon,
     getSingleNodeAsyncOptions,
     executeCustomFunction,
-    getNodesByCategory
+    getNodesByCategory,
+    uploadYaml,
+    deleteYaml
 }

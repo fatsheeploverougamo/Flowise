@@ -807,6 +807,7 @@ const Canvas = () => {
                             handleDeleteFlow={handleDeleteFlow}
                             handleLoadFlow={handleLoadFlow}
                             isAgentCanvas={isAgentCanvas}
+                            getNodesApi={getNodesApi}
                         />
                         <Button
                             variant='contained'
